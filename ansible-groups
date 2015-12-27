@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+from subprocess import call, sys, os
+from ansible.inventory import Inventory
+
+
+def usage():
+    prog = os.path.basename(__file__)
+    sys.stderr.write('Usage: {0} PATTERN\n'.format(prog))
+    sys.exit(1)
+
+
+def get_groups(pattern):
+    inventory = Inventory()
+    groups = inventory.get_groups()
+    if len(pattern) == 0:
+        return groups
+    else:
+        return [group for group in groups if pattern in group.name.lower()]
+
+
+def main(pattern):
+    groups = get_groups(pattern)
+
+    if len(groups) == 0:
+        sys.stderr.write('No groups found.\n')
+        sys.exit(1)
+
+    print '\n'.join(sorted([group.name for group in groups]))
+
+
+if __name__ == '__main__':
+    if len(sys.argv) == 2 and sys.argv[1] == '-h':
+        usage()
+    else:
+        pattern = ' '.join(sys.argv[1:])
+        try:
+            main(pattern)
+        except KeyboardInterrupt:
+            pass
