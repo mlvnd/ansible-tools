@@ -1,0 +1,74 @@
+#!/usr/bin/python2.6
+import yaml
+from yaml.parser import ParserError
+from yaml.scanner import ScannerError
+import sys
+
+ee = None
+
+def usage():
+    sys.stderr.write("{} FILENAME\n")
+    sys.exit(1)
+
+
+def find_line(filename, line_no):
+    """
+    Find a specific line by line number.
+    """
+
+    with open(filename) as f:
+        for i, line in enumerate(f):
+            if i + 1 == line_no:
+                return line.strip()
+
+
+def parse_yaml(filename):
+    """
+    Parses a yaml file and returns it's contents.
+    """
+
+    with open(filename) as f:
+        return yaml.load(f)
+
+
+def yaml_lint(filename):
+    """
+    Parses a yaml file and returns True if it can be parsed.
+    Otherwise False is returned. Only parse errors are catched.
+    """
+
+    retval = False
+
+    try:
+        parse_yaml(filename)
+        retval = True
+
+    except IOError as err:
+        print err
+
+    except (ScannerError, ParserError) as err:
+        line_no = err.problem_mark.line + 1
+        column_no  = err.problem_mark.column + 1
+        print err
+        print
+        print find_line(filename, line_no)
+        print '^'.rjust(column_no, ' ')
+
+    except Exception, e:
+        print "Unkown error:"
+        print type(e)
+        print e
+        global ee
+        ee = e
+
+    finally:
+        return retval
+
+if __name__ == '__main__':
+    if len(sys.argv) <> 2:
+        usage()
+    filename = sys.argv[1]
+    if yaml_lint(filename):
+        sys.exit(0)
+    else:
+        sys.exit(1)
