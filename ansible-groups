@@ -1,6 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python26
 from subprocess import call, sys, os
+from ansible.parsing.dataloader import DataLoader
 from ansible.inventory import Inventory
+from ansible.vars import VariableManager
+
 
 
 def usage():
@@ -10,12 +13,15 @@ def usage():
 
 
 def get_groups(pattern):
-    inventory = Inventory()
+    loader = DataLoader()
+    variable_manager = VariableManager()
+
+    inventory = Inventory(loader=loader, variable_manager=variable_manager)
     groups = inventory.get_groups()
     if len(pattern) == 0:
         return groups
     else:
-        return [group for group in groups if pattern in group.name.lower()]
+        return [group for group in groups if pattern in group.lower()]
 
 
 def main(pattern):
@@ -25,7 +31,7 @@ def main(pattern):
         sys.stderr.write('No groups found.\n')
         sys.exit(1)
 
-    print '\n'.join(sorted([group.name for group in groups]))
+    print '\n'.join(sorted([group for group in groups]))
 
 
 if __name__ == '__main__':
