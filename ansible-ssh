@@ -1,6 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.6
 from subprocess import call, sys, os
+from ansible.parsing.dataloader import DataLoader
 from ansible.inventory import Inventory
+from ansible.vars import VariableManager
+
+from pprint import pprint
 
 
 def usage():
@@ -10,12 +14,20 @@ def usage():
 
 
 def get_hosts(pattern):
-    return Inventory().get_hosts(pattern=pattern)
+    loader = DataLoader()
+    variable_manager = VariableManager()
+    inventory = Inventory(loader=loader, variable_manager=variable_manager)
+    variable_manager.set_inventory(inventory)
+    
+    hosts = inventory.get_hosts(pattern=pattern)
+    for host in hosts:
+        yield host, variable_manager.get_vars(host=host, loader=loader)
 
 
-def open_ssh(host, command):
+def open_ssh(host, vars, command):
+    pprint(host)
     parameters = ['ssh']
-    ansible_vars = host.get_variables()
+    ansible_vars = vars
 
     # ansible_user
     #   The default ssh user name to use.
@@ -71,19 +83,19 @@ def open_ssh(host, command):
     parameters.append(hostname)
     parameters.extend(command)
 
-    print " ".join(parameters)
+    print(" ".join(parameters))
     call(parameters)
 
 
 def main(pattern='*', command=[]):
-    hosts = get_hosts(pattern)
+    found = False
+    for host, vars in get_hosts(pattern):
+        found = True
+        open_ssh(host, vars, command)
 
-    if len(hosts) == 0:
+    if not found:
         sys.stderr.write('No hosts found.\n')
         sys.exit(1)
-
-    for host in hosts:
-        open_ssh(host, command)
 
 
 if __name__ == '__main__':
@@ -95,3 +107,4 @@ if __name__ == '__main__':
             main(pattern, sys.argv[2:])
         except KeyboardInterrupt:
             pass
+# vim: ts=4 sts=4 et sw=4 ft=python
